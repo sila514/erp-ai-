@@ -3,6 +3,7 @@ import logging
 
 from fastapi import FastAPI
 
+from app.analytics.router import router as analytics_router
 from app.demand_forecast.router import router as demand_forecast_router
 from app.stock_risk.router import router as stock_risk_router
 from app.customer_segmentation.router import router as segmentation_router
@@ -19,6 +20,7 @@ app.include_router(stock_risk_router)
 app.include_router(segmentation_router)
 app.include_router(churn_router)
 app.include_router(anomaly_router)
+app.include_router(analytics_router)
 
 
 @app.on_event("startup")

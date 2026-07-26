@@ -39,21 +39,23 @@ export default function CopilotPage() {
 
   return (
     <div className="flex h-full max-w-2xl flex-col">
-      <div className="card-dark mb-4 flex-1 space-y-3 overflow-y-auto">
+      <div className="glass glass-hover mb-4 flex-1 space-y-3 overflow-y-auto">
+        <div className="glass-glow -right-16 -top-16 h-56 w-56 bg-indigo-500/20" />
+        <div className="glass-glow -left-16 bottom-0 top-auto h-48 w-48 bg-fuchsia-500/15" />
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`max-w-md rounded-xl px-4 py-2 text-[13px] ${
+            className={`relative z-10 max-w-md rounded-xl px-4 py-2 text-[13px] ${
               m.role === "user"
-                ? "ml-auto bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-glow-sm"
-                : "border border-sky-400/15 bg-navy-900/60 text-sky-100/85"
+                ? "ml-auto bg-gradient-to-br from-sky-500 via-indigo-500 to-fuchsia-500 text-white shadow-glow-md"
+                : "border border-white/[0.08] bg-white/[0.04] text-slate-200 backdrop-blur"
             }`}
           >
             {m.content}
           </div>
         ))}
         {loading && (
-          <div className="flex items-center gap-1.5 text-[11px] text-sky-400/50">
+          <div className="relative z-10 flex items-center gap-1.5 text-[11px] text-sky-300/70">
             <Sparkles size={12} className="animate-pulse" />
             Copilot yazıyor...
           </div>
@@ -66,11 +68,11 @@ export default function CopilotPage() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="Örn: Hangi ürünler stok riski altında?"
-          className="flex-1 rounded-lg border border-sky-400/20 bg-navy-900/60 px-3 py-2 text-[13px] text-sky-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
+          className="flex-1 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-[13px] text-white placeholder:text-slate-500 backdrop-blur focus:outline-none focus:ring-2 focus:ring-sky-400/40"
         />
         <button
           onClick={handleSend}
-          className="flex items-center gap-1 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 px-4 py-2 text-[13px] text-white shadow-glow-sm transition-opacity hover:opacity-90"
+          className="flex items-center gap-1 rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-fuchsia-500 px-4 py-2.5 text-[13px] text-white shadow-glow-md transition-transform hover:scale-105"
         >
           <Send size={15} />
         </button>

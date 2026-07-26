@@ -63,15 +63,15 @@ export default function Dashboard() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard label="Toplam Ürün" value={overview.data!.total_products} icon={Boxes} progress={70} />
+        <KpiCard label="Toplam Ürün" value={overview.data!.total_products} icon={Boxes} accent="blue" progress={70} />
         <KpiCard
           label="Düşük Stoklu Ürün"
           value={overview.data!.low_stock_products}
           icon={AlertTriangle}
-          accent="magenta"
+          accent="amber"
           progress={45}
         />
-        <KpiCard label="Toplam Müşteri" value={overview.data!.total_customers} icon={Users} progress={80} />
+        <KpiCard label="Toplam Müşteri" value={overview.data!.total_customers} icon={Users} accent="violet" progress={80} />
         <KpiCard
           label="Anomalili Satış"
           value={overview.data!.flagged_anomalous_sales}
@@ -79,11 +79,12 @@ export default function Dashboard() {
           accent="magenta"
           progress={30}
         />
-        <KpiCard label="Toplam Satış" value={sales.data?.length ?? 0} icon={ShoppingCart} progress={65} />
+        <KpiCard label="Toplam Satış" value={sales.data?.length ?? 0} icon={ShoppingCart} accent="emerald" progress={65} />
         <KpiCard
           label="Toplam Gelir"
           value={financeSummary.data ? formatCompact(financeSummary.data.total_income) : "-"}
           icon={Wallet}
+          accent="blue"
           progress={75}
         />
       </div>

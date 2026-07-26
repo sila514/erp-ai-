@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel
@@ -19,6 +20,7 @@ class TransactionOut(BaseModel):
     category: str | None
     amount: Decimal
     description: str | None
+    created_at: datetime
 
     class Config:
         from_attributes = True

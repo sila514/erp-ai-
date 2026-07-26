@@ -11,12 +11,15 @@ function stockTone(stock: number, reorder: number): { tone: StatusTone; label: s
   return { tone: "good", label: "Normal" };
 }
 
+const SERVICE_LEVELS = [0.9, 0.95, 0.99];
+
 export default function InventoryPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [serviceLevel, setServiceLevel] = useState(0.95);
   const { data: products, isLoading } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
   const stockRisk = useQuery({
-    queryKey: ["stock-risk", selectedId],
-    queryFn: () => fetchStockRisk(selectedId!),
+    queryKey: ["stock-risk", selectedId, serviceLevel],
+    queryFn: () => fetchStockRisk(selectedId!, serviceLevel),
     enabled: !!selectedId,
   });
 
@@ -72,8 +75,24 @@ export default function InventoryPage() {
 
       {selectedId && (
         <div className="card-dark">
-          <div className="mb-3 text-[13px] font-semibold text-sky-100/90">
-            Stok Tükenme Riski — {selectedProduct?.name}
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-[13px] font-semibold text-sky-100/90">
+              Stok Tükenme Riski — {selectedProduct?.name}
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+              Servis seviyesi
+              <select
+                value={serviceLevel}
+                onChange={(e) => setServiceLevel(Number(e.target.value))}
+                className="rounded-md border border-sky-400/20 bg-navy-950/60 px-2 py-1 text-[11px] text-sky-200 focus:outline-none"
+              >
+                {SERVICE_LEVELS.map((lvl) => (
+                  <option key={lvl} value={lvl}>
+                    %{(lvl * 100).toFixed(0)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           {stockRisk.isLoading && <p className="text-xs text-slate-500">ML servisinden alınıyor...</p>}
           {stockRisk.error && (
@@ -86,9 +105,12 @@ export default function InventoryPage() {
                 <div className="text-lg font-bold text-sky-300">{stockRisk.data.current_stock}</div>
               </div>
               <div>
-                <div className="text-[10px] text-sky-400/40">Günlük Tahmini Talep</div>
+                <div className="text-[10px] text-sky-400/40">Günlük Tahmini Talep (± σ)</div>
                 <div className="text-lg font-bold text-sky-300">
                   {stockRisk.data.predicted_daily_demand.toFixed(1)}
+                  <span className="ml-1 text-[11px] font-normal text-slate-500">
+                    ± {stockRisk.data.daily_demand_sigma.toFixed(1)}
+                  </span>
                 </div>
               </div>
               <div>
@@ -109,6 +131,28 @@ export default function InventoryPage() {
                   }
                   label={stockRisk.data.risk_level}
                 />
+              </div>
+              <div>
+                <div className="text-[10px] text-sky-400/40">Güvenlik Stoğu</div>
+                <div className="text-lg font-bold text-sky-300">{stockRisk.data.safety_stock.toFixed(0)}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-sky-400/40">Yeniden Sipariş Noktası</div>
+                <div className="text-lg font-bold text-sky-300">{stockRisk.data.reorder_point.toFixed(0)}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-sky-400/40">Önerilen Sipariş Miktarı</div>
+                <div className="text-lg font-bold text-sky-300">
+                  {stockRisk.data.recommended_reorder_quantity}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-sky-400/40">Belirsizlik Kaynağı</div>
+                <div className="text-[11px] font-medium text-slate-400">
+                  {stockRisk.data.uncertainty_source === "quantile_forecast"
+                    ? "Quantile tahmin (p10/p90)"
+                    : "Fallback (%30 CV varsayımı)"}
+                </div>
               </div>
             </div>
           )}

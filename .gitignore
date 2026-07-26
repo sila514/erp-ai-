@@ -4,6 +4,7 @@ __pycache__/
 venv/
 .env
 model_registry/
+mlruns/
 
 # Node
 node_modules/

@@ -31,11 +31,17 @@ class ProductOut(BaseModel):
 
 
 class StockRiskOut(BaseModel):
-    """ML servisinden gelen stok tükenme riski sonucu."""
+    """ML servisinden gelen stok tükenme riski sonucu (talep tahmininin
+    belirsizliğinden — p10/p90 aralığından — hesaplanan güvenlik stoğu dahil)."""
 
     product_id: uuid.UUID
     current_stock: int
     predicted_daily_demand: float
-    days_until_stockout: float
+    daily_demand_sigma: float
+    days_until_stockout: float | None
     risk_level: str  # "low" | "medium" | "high"
+    service_level: float
+    safety_stock: float
+    reorder_point: float
     recommended_reorder_quantity: int
+    uncertainty_source: str  # "quantile_forecast" | "fallback_cv_30pct"

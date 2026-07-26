@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -43,15 +43,19 @@ def get_product(product_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.get("/products/{product_id}/stock-risk", response_model=StockRiskOut)
-async def get_product_stock_risk(product_id: uuid.UUID, db: Session = Depends(get_db)):
+async def get_product_stock_risk(
+    product_id: uuid.UUID,
+    service_level: float = Query(0.95, gt=0.5, lt=0.999),
+    db: Session = Depends(get_db),
+):
     """
     ML servisinden bu ürünün stok tükenme riski tahminini alır.
-    ML servisi: geçmiş stok hareketlerini kullanarak günlük talebi tahmin eder,
-    mevcut stok / lead time ile kaç güne yeteceğini hesaplar.
+    ML servisi: talep tahmininin p10/p90 belirsizlik aralığından günlük
+    sigma'yı tahmin eder, `service_level`'a göre güvenlik stoğu hesaplar.
     """
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Ürün bulunamadı")
 
-    risk = await ml_client.get_stock_risk(product_id)
+    risk = await ml_client.get_stock_risk(product_id, service_level=service_level)
     return risk

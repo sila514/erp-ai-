@@ -8,6 +8,7 @@ from app.modules.sales.router import router as sales_router
 from app.modules.customers.router import router as customers_router
 from app.modules.finance.router import router as finance_router
 from app.modules.dashboard.router import router as dashboard_router
+from app.modules.analytics.router import router as analytics_router
 from app.copilot.router import router as copilot_router
 
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
@@ -27,6 +28,7 @@ app.include_router(sales_router)
 app.include_router(customers_router)
 app.include_router(finance_router)
 app.include_router(dashboard_router)
+app.include_router(analytics_router)
 app.include_router(copilot_router)
 
 

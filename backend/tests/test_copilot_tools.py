@@ -4,6 +4,9 @@ test eder. Gerçek Anthropic API çağrısı gerektiren tam /api/copilot/ask ak�
 kapsam dışıdır (bkz. plan dokümanı) - burada test edilen, LLM'in çağırabileceği
 gerçek veri erişim fonksiyonlarının doğruluğudur.
 """
+import httpx
+import respx
+
 from app.copilot.tools import execute_tool
 from app.models.customer import Customer
 from app.models.finance import FinanceTransaction, TransactionType
@@ -68,3 +71,39 @@ def test_get_recent_flagged_sales(db):
 def test_unknown_tool_returns_error(db):
     result = execute_tool(db, "does_not_exist", {})
     assert "error" in result
+
+
+def test_get_correlation_insights_filters_to_significant_and_never_claims_causation(db):
+    mock_response = {
+        "target": "churn",
+        "disclaimer": "Korelasyon nedensellik değildir. Bu sonuçlar yalnızca istatistiksel ilişkiyi gösterir.",
+        "results": [
+            {
+                "feature": "category_diversity",
+                "correlation": 0.17,
+                "p_value": 0.004,
+                "mutual_information": 0.016,
+                "p_value_corrected": 0.033,
+                "significant": True,
+            },
+            {
+                "feature": "trend_ratio",
+                "correlation": -0.03,
+                "p_value": 0.54,
+                "mutual_information": 0.017,
+                "p_value_corrected": 0.63,
+                "significant": False,
+            },
+        ],
+    }
+    with respx.mock(assert_all_called=True) as mock:
+        mock.get(url__regex=r".*/analytics/feature-importance/churn.*").mock(
+            return_value=httpx.Response(200, json=mock_response)
+        )
+        result = execute_tool(db, "get_correlation_insights", {"target": "churn"})
+
+    assert result["target"] == "churn"
+    assert "nedensellik değildir" in result["disclaimer"]
+    assert len(result["significant_relationships"]) == 1
+    assert result["significant_relationships"][0]["feature"] == "category_diversity"
+    assert result["significant_relationships"][0]["direction"] == "pozitif"

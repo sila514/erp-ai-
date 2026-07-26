@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -7,6 +7,7 @@
 body {
   @apply bg-navy-950 text-slate-200;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::-webkit-scrollbar {
@@ -14,48 +15,68 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #0d3060;
+  background: rgba(99, 102, 241, 0.35);
   border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.55);
 }
 
 @layer components {
-  /* Koyu, hafif gradientli temel kart yüzeyi - üst kenarda ince parlak çizgi */
-  .card-dark {
-    @apply relative overflow-hidden rounded-xl border border-sky-400/10 bg-gradient-to-br from-navy-900/90 to-navy-950/95 p-4;
+  /* ---------- Aurora arka plan: sabit, yavaşça süzülen çok renkli mesh ---------- */
+  .aurora-field {
+    @apply pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-navy-950;
   }
-  .card-dark::before {
-    content: "";
-    @apply absolute inset-x-0 top-0 h-px;
-    background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.4), transparent);
-  }
-  .card-dark:hover {
-    @apply border-sky-400/25;
+  .aurora-blob {
+    @apply absolute rounded-full blur-[100px];
   }
 
-  /* KPI kartı: gradient border (mask tekniği) + köşede glow blur */
-  .kpi-card {
-    @apply relative overflow-hidden rounded-xl p-3.5 transition-transform duration-150;
+  /* ---------- Cam (glass) yüzey: tüm kart/panel bileşenlerinin temeli ---------- */
+  .glass {
+    @apply relative overflow-hidden rounded-2xl border border-white/[0.08] p-4;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 55%, rgba(255, 255, 255, 0.05) 100%);
+    backdrop-filter: blur(28px) saturate(150%);
+    -webkit-backdrop-filter: blur(28px) saturate(150%);
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset, 0 8px 32px -8px rgba(0, 0, 0, 0.55);
+    transition: border-color 0.2s ease, box-shadow 0.25s ease, transform 0.2s ease;
   }
-  .kpi-card:hover {
-    transform: translateY(-2px);
+  .glass::before {
+    content: "";
+    @apply absolute inset-x-0 top-0 h-px;
+    background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.7), rgba(139, 92, 246, 0.7), rgba(217, 70, 239, 0.55), transparent);
+  }
+  .glass-hover:hover {
+    @apply border-white/[0.14] -translate-y-0.5;
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.08) inset, 0 24px 48px -12px rgba(0, 0, 0, 0.6), 0 0 32px -4px rgba(99, 102, 241, 0.25);
+  }
+
+  /* Kart üstündeki dekoratif renkli glow lekesi - opaklık her kullanımda bg-color/alpha ile verilir */
+  .glass-glow {
+    @apply pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full blur-3xl;
+  }
+
+  /* ---------- Gradyan metin (başlıklar, KPI rakamları) ---------- */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(120deg, #7dd3fc, #a5b4fc, #e879f9);
+  }
+
+  /* ---------- KPI kartı: gradyan çerçeve (mask tekniği) ---------- */
+  .kpi-card {
+    @apply glass glass-hover p-3.5;
   }
   .kpi-card::after {
     content: "";
     position: absolute;
     inset: 0;
-    border-radius: 0.75rem;
+    border-radius: 1rem;
     padding: 1px;
-    background: linear-gradient(135deg, rgba(0, 180, 255, 0.55), rgba(0, 80, 180, 0.15), rgba(0, 180, 255, 0.08));
+    background: linear-gradient(135deg, var(--kpi-a, #38bdf8), var(--kpi-b, #6366f1) 45%, transparent 85%);
+    opacity: 0.55;
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
-  }
-  .kpi-card-bg {
-    @apply absolute inset-0 rounded-xl bg-gradient-to-br from-navy-800 via-[#0d2870] to-navy-800;
-  }
-  .kpi-card-glow {
-    @apply pointer-events-none absolute -right-5 -top-5 h-20 w-20 rounded-full opacity-20 blur-2xl;
   }
 
   .badge {
@@ -74,6 +95,11 @@ body {
     @apply border-status-critical/30 bg-status-critical/10 text-status-critical;
   }
   .badge-neutral {
-    @apply border-sky-400/20 bg-sky-400/10 text-sky-300;
+    @apply border-white/10 bg-white/5 text-sky-300;
+  }
+
+  /* Geriye dönük uyum: eski .card-dark çağrıları .glass gibi davransın */
+  .card-dark {
+    @apply glass glass-hover;
   }
 }

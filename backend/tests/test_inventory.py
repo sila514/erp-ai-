@@ -46,9 +46,14 @@ def test_stock_risk_calls_ml_service(client):
         "product_id": product["id"],
         "current_stock": 5,
         "predicted_daily_demand": 1.2,
+        "daily_demand_sigma": 0.5,
         "days_until_stockout": 4.1,
         "risk_level": "high",
+        "service_level": 0.95,
+        "safety_stock": 3.2,
+        "reorder_point": 12.5,
         "recommended_reorder_quantity": 30,
+        "uncertainty_source": "quantile_forecast",
     }
 
     with respx.mock(assert_all_called=True) as mock:

@@ -33,13 +33,20 @@ export interface StockRisk {
   product_id: string;
   current_stock: number;
   predicted_daily_demand: number;
+  daily_demand_sigma: number;
   days_until_stockout: number | null;
   risk_level: "low" | "medium" | "high";
+  service_level: number;
+  safety_stock: number;
+  reorder_point: number;
   recommended_reorder_quantity: number;
+  uncertainty_source: string;
 }
 
-export async function fetchStockRisk(productId: string): Promise<StockRisk> {
-  const { data } = await apiClient.get<StockRisk>(`/api/inventory/products/${productId}/stock-risk`);
+export async function fetchStockRisk(productId: string, serviceLevel = 0.95): Promise<StockRisk> {
+  const { data } = await apiClient.get<StockRisk>(`/api/inventory/products/${productId}/stock-risk`, {
+    params: { service_level: serviceLevel },
+  });
   return data;
 }
 
@@ -136,4 +143,80 @@ export async function fetchFinanceSummary(): Promise<FinanceSummary> {
 export async function askCopilot(question: string): Promise<string> {
   const { data } = await apiClient.post<{ answer: string }>("/api/copilot/ask", { question });
   return data.answer;
+}
+
+export interface VifResult {
+  feature: string;
+  vif: number | null;
+  high_multicollinearity: boolean;
+}
+
+export interface CorrelationMatrix {
+  columns: string[];
+  pearson_r: (number | null)[][];
+  pearson_p: (number | null)[][];
+  pearson_p_corrected: (number | null)[][];
+  spearman_r: (number | null)[][];
+  spearman_p: (number | null)[][];
+  spearman_p_corrected: (number | null)[][];
+  correction_method: string;
+  n_observations: number;
+  n_pairs_tested: number;
+  vif: { vif_threshold: number; results: VifResult[]; recommendation?: string };
+  entity: string;
+  disclaimer: string;
+}
+
+export type AnalyticsEntity = "sales" | "customers" | "products";
+
+export async function fetchCorrelationMatrix(entity: AnalyticsEntity): Promise<CorrelationMatrix> {
+  const { data } = await apiClient.get<CorrelationMatrix>("/api/analytics/correlation-matrix", {
+    params: { entity },
+  });
+  return data;
+}
+
+export interface AcfResult {
+  product_id: string;
+  lags: number[];
+  acf: number[];
+  pacf: number[];
+  adf_test: { statistic: number; p_value: number; is_stationary: boolean };
+  differenced_adf_test: { statistic: number; p_value: number; is_stationary: boolean };
+  disclaimer: string;
+}
+
+export async function fetchAcf(productId: string, maxLag = 30): Promise<AcfResult> {
+  const { data } = await apiClient.get<AcfResult>(`/api/analytics/acf/${productId}`, {
+    params: { max_lag: maxLag },
+  });
+  return data;
+}
+
+export interface FeatureImportanceRow {
+  feature: string;
+  correlation: number | null;
+  p_value: number | null;
+  mutual_information: number;
+  p_value_corrected: number | null;
+  significant: boolean;
+}
+
+export interface FeatureImportanceResult {
+  correction_method: string;
+  results: FeatureImportanceRow[];
+  target: "churn" | "demand";
+  product_id?: string;
+  disclaimer: string;
+}
+
+export async function fetchFeatureImportance(
+  target: "churn" | "demand",
+  productId?: string
+): Promise<FeatureImportanceResult> {
+  const { data } = await apiClient.get<FeatureImportanceResult>(
+    `/api/analytics/feature-importance/${target}`,
+    { params: productId ? { product_id: productId } : {} }
+  );
+  return data;
 }

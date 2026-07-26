@@ -15,5 +15,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Docker (WSL2 + Windows host dosya sistemi) üzerinde inotify olayları bind mount'a
+    // yansımayabiliyor - dosya değişikliklerini yakalamak için polling'e zorla.
+    watch: {
+      usePolling: true,
+      interval: 300,
+    },
   },
 });

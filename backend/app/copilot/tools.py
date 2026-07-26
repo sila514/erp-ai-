@@ -3,9 +3,11 @@ AI Copilot, LLM'e doğrudan veritabanı erişimi vermez.
 Bunun yerine burada tanımlı, parametreli ve güvenli fonksiyonları "tool" olarak sunar.
 LLM hangi fonksiyonu çağıracağına karar verir, gerçek veriyi biz çekeriz.
 """
+import httpx
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.customer import Customer
 from app.models.finance import FinanceTransaction, TransactionType
 from app.models.product import Product
@@ -39,6 +41,30 @@ COPILOT_TOOLS = [
             "type": "object",
             "properties": {"limit": {"type": "integer"}},
             "required": [],
+        },
+    },
+    {
+        "name": "get_correlation_insights",
+        "description": (
+            "Churn veya talep tahmini için hangi feature'ların hedefle istatistiksel olarak "
+            "anlamlı ilişkili olduğunu (çoklu test düzeltmesi sonrası) döndürür. Bu sonuçlar "
+            "SADECE korelasyon/ilişkidir — nedensellik değildir, asla 'X, Y'ye sebep oluyor' "
+            "gibi bir iddia kurma; 'X ile Y arasında ilişki gözlemleniyor' şeklinde ifade et."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "target": {
+                    "type": "string",
+                    "enum": ["churn", "demand"],
+                    "description": "Hangi hedef için ilişki analizi yapılsın",
+                },
+                "product_id": {
+                    "type": "string",
+                    "description": "target='demand' ise hangi ürün için (verilmezse en çok hareket gören ürün kullanılır)",
+                },
+            },
+            "required": ["target"],
         },
     },
 ]
@@ -98,6 +124,36 @@ def execute_tool(db: Session, tool_name: str, tool_input: dict) -> dict:
                 {"id": str(s.id), "total_amount": float(s.total_amount), "anomaly_score": float(s.anomaly_score or 0)}
                 for s in sales
             ]
+        }
+
+    if tool_name == "get_correlation_insights":
+        target = tool_input.get("target", "churn")
+        params = {"product_id": tool_input["product_id"]} if tool_input.get("product_id") else {}
+        try:
+            resp = httpx.get(
+                f"{settings.ML_SERVICE_URL}/analytics/feature-importance/{target}",
+                params=params,
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        except httpx.HTTPError as exc:
+            return {"error": f"ML servisinden ilişki verisi alınamadı: {exc}"}
+
+        significant = [row for row in data["results"] if row.get("significant")]
+        return {
+            "target": data["target"],
+            "disclaimer": data["disclaimer"],
+            "significant_relationships": [
+                {
+                    "feature": row["feature"],
+                    "correlation": row["correlation"],
+                    "direction": "pozitif" if (row["correlation"] or 0) > 0 else "negatif",
+                    "corrected_p_value": row["p_value_corrected"],
+                }
+                for row in significant
+            ],
+            "note": "significant_relationships boşsa, çoklu test düzeltmesi sonrası anlamlı bir ilişki bulunamadı demektir.",
         }
 
     return {"error": f"Bilinmeyen fonksiyon: {tool_name}"}

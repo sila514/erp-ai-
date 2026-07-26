@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel
@@ -33,6 +34,7 @@ class SaleOut(BaseModel):
     total_amount: Decimal
     is_flagged_anomaly: bool
     anomaly_score: Decimal | None
+    created_at: datetime
     items: list[SaleItemOut]
 
     class Config:

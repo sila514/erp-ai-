@@ -24,13 +24,14 @@ export default function FinancePage() {
           label="Toplam Gelir"
           value={summary.data ? formatCurrency(summary.data.total_income) : "-"}
           icon={TrendingUp}
+          accent="emerald"
           progress={80}
         />
         <KpiCard
           label="Toplam Gider"
           value={summary.data ? formatCurrency(summary.data.total_expense) : "-"}
           icon={TrendingDown}
-          accent="magenta"
+          accent="amber"
           progress={55}
         />
         <KpiCard
