@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.ml_gateway.client import ml_client
+from app.core.events import publish_sale_created
 from app.models.sale import Sale, SaleItem
 from app.modules.sales.schemas import SaleCreate, SaleOut
 
@@ -25,19 +25,15 @@ async def create_sale(payload: SaleCreate, db: Session = Depends(get_db)):
     for item in payload.items:
         db.add(SaleItem(sale_id=sale.id, **item.model_dump()))
 
-    # ML servisine anlık anomali kontrolü gönder (tutar, sıklık, saat gibi sinyallerle)
-    anomaly_result = await ml_client.check_sale_anomaly(
-        {
-            "customer_id": str(payload.customer_id),
-            "total_amount": float(total),
-            "item_count": len(payload.items),
-        }
-    )
-    sale.is_flagged_anomaly = anomaly_result.get("is_anomaly", False)
-    sale.anomaly_score = anomaly_result.get("anomaly_score")
-
     db.commit()
     db.refresh(sale)
+
+    # Anomali tespiti artık senkron değil: event yayınlanır, ml_service bunu
+    # ayrı bir consumer olarak dinleyip sonucu (is_flagged_anomaly, anomaly_score)
+    # birkaç saniye içinde doğrudan bu satış kaydına yazar. Bu nedenle burada
+    # dönen sale.is_flagged_anomaly henüz varsayılan (False) olabilir.
+    await publish_sale_created(sale)
+
     return sale
 
 

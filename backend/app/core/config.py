@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # ML servis adresi (ayrı bir mikroservis olarak çalışır)
     ML_SERVICE_URL: str = "http://localhost:8001"
 
+    # Event-driven mimari için Redis (Streams). Satış olayları burada yayınlanır,
+    # ml_service ayrı bir consumer group ile dinler.
+    REDIS_URL: str = "redis://localhost:6379/0"
+
     # AI Copilot icin LLM ayarlari
     ANTHROPIC_API_KEY: str = ""
     COPILOT_MODEL: str = "claude-sonnet-4-6"

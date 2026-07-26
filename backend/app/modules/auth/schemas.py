@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import BaseModel, EmailStr
 
 from app.models.user import UserRole
@@ -12,7 +14,7 @@ class UserCreate(BaseModel):
 
 
 class UserOut(BaseModel):
-    id: str
+    id: uuid.UUID
     username: str
     email: str
     full_name: str | None

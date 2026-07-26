@@ -8,6 +8,11 @@ model_registry/
 # Node
 node_modules/
 dist/
+*.tsbuildinfo
+
+# pytest
+.pytest_cache/
+*.db
 
 # Editor / OS
 .vscode/

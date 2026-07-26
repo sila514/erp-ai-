@@ -2,8 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.core.database import Base, engine
-from app.models import *  # noqa - tüm modelleri kaydet
 from app.modules.auth.router import router as auth_router
 from app.modules.inventory.router import router as inventory_router
 from app.modules.sales.router import router as sales_router
@@ -21,14 +19,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-def on_startup():
-    # Geliştirme ortamında otomatik tablo oluşturma.
-    # Üretimde bunun yerine Alembic migration kullanılmalı.
-    if settings.ENV == "development":
-        Base.metadata.create_all(bind=engine)
 
 
 app.include_router(auth_router)

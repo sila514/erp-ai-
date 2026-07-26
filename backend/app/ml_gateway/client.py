@@ -40,11 +40,5 @@ class MLGatewayClient:
             resp.raise_for_status()
             return resp.json()
 
-    async def check_sale_anomaly(self, sale_payload: dict) -> dict:
-        async with httpx.AsyncClient(base_url=self.base_url, timeout=self.timeout) as client:
-            resp = await client.post("/anomaly/check", json=sale_payload)
-            resp.raise_for_status()
-            return resp.json()
-
 
 ml_client = MLGatewayClient()

@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy import Column, String, Numeric, Integer, DateTime, func
-from sqlalchemy.dialects.postgresql import UUID
+from app.core.types import GUID
 
 from app.core.database import Base
 
@@ -9,7 +9,7 @@ from app.core.database import Base
 class Product(Base):
     __tablename__ = "products"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     sku = Column(String(64), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
     category = Column(String(128), nullable=True, index=True)
@@ -27,8 +27,8 @@ class StockMovement(Base):
 
     __tablename__ = "stock_movements"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    product_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    product_id = Column(GUID(), nullable=False, index=True)
     movement_type = Column(String(16), nullable=False)  # "in" | "out" | "adjustment"
     quantity = Column(Integer, nullable=False)
     note = Column(String(255), nullable=True)

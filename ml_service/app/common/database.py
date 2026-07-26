@@ -7,6 +7,7 @@ class MLSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     DATABASE_URL: str = "postgresql://erp_user:erp_pass@localhost:5432/erp_db"
     MODEL_REGISTRY_PATH: str = "./model_registry"
+    REDIS_URL: str = "redis://localhost:6379/0"
 
 
 settings = MLSettings()

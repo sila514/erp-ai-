@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy import Column, String, DateTime, func, Numeric
-from sqlalchemy.dialects.postgresql import UUID
+from app.core.types import GUID
 
 from app.core.database import Base
 
@@ -9,7 +9,7 @@ from app.core.database import Base
 class Customer(Base):
     __tablename__ = "customers"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
     email = Column(String(128), nullable=True, index=True)
     phone = Column(String(32), nullable=True)

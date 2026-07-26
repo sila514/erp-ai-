@@ -1,54 +1,67 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchProducts } from "@/lib/api/endpoints";
+import { Search } from "lucide-react";
+import { fetchProducts, fetchStockRisk } from "@/lib/api/endpoints";
+import StatusBadge, { type StatusTone } from "@/components/ui/StatusBadge";
+import { formatCurrency } from "@/lib/format";
 
-const riskBadgeStyle: Record<string, string> = {
-  high: "bg-red-100 text-red-700",
-  medium: "bg-amber-100 text-amber-700",
-  low: "bg-green-100 text-green-700",
-};
+function stockTone(stock: number, reorder: number): { tone: StatusTone; label: string } {
+  if (stock <= reorder * 0.5) return { tone: "critical", label: "Kritik stok" };
+  if (stock <= reorder) return { tone: "warning", label: "Düşük stok" };
+  return { tone: "good", label: "Normal" };
+}
 
 export default function InventoryPage() {
-  const { data: products, isLoading } = useQuery({
-    queryKey: ["products"],
-    queryFn: fetchProducts,
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { data: products, isLoading } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
+  const stockRisk = useQuery({
+    queryKey: ["stock-risk", selectedId],
+    queryFn: () => fetchStockRisk(selectedId!),
+    enabled: !!selectedId,
   });
 
-  if (isLoading) return <p className="text-gray-500">Yükleniyor...</p>;
+  if (isLoading) return <p className="text-sm text-slate-500">Yükleniyor...</p>;
+
+  const selectedProduct = products?.find((p) => p.id === selectedId);
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-4">Stok yönetimi</h1>
-
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-left">
-            <tr>
-              <th className="px-4 py-2">SKU</th>
-              <th className="px-4 py-2">Ürün</th>
-              <th className="px-4 py-2">Kategori</th>
-              <th className="px-4 py-2">Stok</th>
-              <th className="px-4 py-2">Yeniden sipariş eşiği</th>
-              <th className="px-4 py-2">Durum</th>
+    <div className="space-y-4">
+      <div className="card-dark overflow-visible">
+        <table className="w-full text-left text-[12px]">
+          <thead>
+            <tr className="text-[10px] uppercase tracking-wide text-sky-400/35">
+              <th className="pb-2 pl-1">SKU</th>
+              <th className="pb-2">Ürün</th>
+              <th className="pb-2">Kategori</th>
+              <th className="pb-2">Stok</th>
+              <th className="pb-2">Eşik</th>
+              <th className="pb-2">Birim Fiyat</th>
+              <th className="pb-2">Durum</th>
+              <th className="pb-2 pr-1">ML Risk</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-sky-400/[0.07]">
             {products?.map((p) => {
-              const isLow = p.stock_quantity <= p.reorder_level;
+              const { tone, label } = stockTone(p.stock_quantity, p.reorder_level);
               return (
-                <tr key={p.id}>
-                  <td className="px-4 py-2 font-mono text-xs text-gray-500">{p.sku}</td>
-                  <td className="px-4 py-2">{p.name}</td>
-                  <td className="px-4 py-2 text-gray-500">{p.category ?? "-"}</td>
-                  <td className="px-4 py-2">{p.stock_quantity}</td>
-                  <td className="px-4 py-2 text-gray-500">{p.reorder_level}</td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
-                        isLow ? riskBadgeStyle.high : riskBadgeStyle.low
-                      }`}
+                <tr key={p.id} className="hover:bg-sky-400/[0.04]">
+                  <td className="py-2 pl-1 font-mono text-[10px] text-sky-400/50">{p.sku}</td>
+                  <td className="py-2 text-sky-100/80">{p.name}</td>
+                  <td className="py-2 text-slate-500">{p.category ?? "-"}</td>
+                  <td className="py-2 text-sky-100/80">{p.stock_quantity}</td>
+                  <td className="py-2 text-slate-500">{p.reorder_level}</td>
+                  <td className="py-2 text-slate-500">{formatCurrency(p.unit_price)}</td>
+                  <td className="py-2">
+                    <StatusBadge tone={tone} label={label} />
+                  </td>
+                  <td className="py-2 pr-1">
+                    <button
+                      onClick={() => setSelectedId(p.id)}
+                      className="flex items-center gap-1 rounded-md border border-sky-400/20 bg-sky-400/5 px-2 py-1 text-[10px] text-sky-300 transition-colors hover:border-sky-400/50"
                     >
-                      {isLow ? "Düşük stok" : "Normal"}
-                    </span>
+                      <Search size={10} />
+                      Sorgula
+                    </button>
                   </td>
                 </tr>
               );
@@ -56,10 +69,51 @@ export default function InventoryPage() {
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-gray-400 mt-2">
-        Not: "Düşük stok" etiketi basit eşik kontrolüdür. Detaylı risk skoru için
-        ürün detay sayfasında ML servisinden gelen /stock-risk sonucu gösterilmeli.
-      </p>
+
+      {selectedId && (
+        <div className="card-dark">
+          <div className="mb-3 text-[13px] font-semibold text-sky-100/90">
+            Stok Tükenme Riski — {selectedProduct?.name}
+          </div>
+          {stockRisk.isLoading && <p className="text-xs text-slate-500">ML servisinden alınıyor...</p>}
+          {stockRisk.error && (
+            <p className="text-xs text-rose-400">Risk hesaplanamadı. ML servisi çalışıyor mu?</p>
+          )}
+          {stockRisk.data && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div>
+                <div className="text-[10px] text-sky-400/40">Mevcut Stok</div>
+                <div className="text-lg font-bold text-sky-300">{stockRisk.data.current_stock}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-sky-400/40">Günlük Tahmini Talep</div>
+                <div className="text-lg font-bold text-sky-300">
+                  {stockRisk.data.predicted_daily_demand.toFixed(1)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-sky-400/40">Tükenmeye Kalan Gün</div>
+                <div className="text-lg font-bold text-sky-300">
+                  {stockRisk.data.days_until_stockout?.toFixed(0) ?? "-"}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-sky-400/40">Risk Seviyesi</div>
+                <StatusBadge
+                  tone={
+                    stockRisk.data.risk_level === "high"
+                      ? "critical"
+                      : stockRisk.data.risk_level === "medium"
+                        ? "warning"
+                        : "good"
+                  }
+                  label={stockRisk.data.risk_level}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

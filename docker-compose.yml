@@ -18,6 +18,19 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: erp_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -26,10 +39,15 @@ services:
     environment:
       DATABASE_URL: postgresql://erp_user:erp_pass@postgres:5432/erp_db
       ML_SERVICE_URL: http://ml_service:8001
+      REDIS_URL: redis://redis:6379/0
+    # Şema artık create_all değil, Alembic migration ile kurulur (bkz. backend/alembic/).
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "8000:8000"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./backend:/app
@@ -40,10 +58,15 @@ services:
     container_name: erp_ml_service
     environment:
       DATABASE_URL: postgresql://erp_user:erp_pass@postgres:5432/erp_db
+      REDIS_URL: redis://redis:6379/0
+    # startup'ta 'erp:events:sales' stream'ini dinleyen consumer da bu process içinde
+    # arka plan task'ı olarak başlar (bkz. ml_service/app/main.py, app/events/consumer.py).
     ports:
       - "8001:8001"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./ml_service:/app
@@ -65,4 +88,5 @@ services:
 
 volumes:
   pgdata:
+  redisdata:
   model_registry:
