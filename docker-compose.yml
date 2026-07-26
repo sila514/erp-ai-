@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: erp_postgres
+    environment:
+      POSTGRES_USER: erp_user
+      POSTGRES_PASSWORD: erp_pass
+      POSTGRES_DB: erp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp_user -d erp_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: erp_backend
+    env_file: ./infra/.env
+    environment:
+      DATABASE_URL: postgresql://erp_user:erp_pass@postgres:5432/erp_db
+      ML_SERVICE_URL: http://ml_service:8001
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+  ml_service:
+    build:
+      context: ./ml_service
+    container_name: erp_ml_service
+    environment:
+      DATABASE_URL: postgresql://erp_user:erp_pass@postgres:5432/erp_db
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./ml_service:/app
+      - model_registry:/app/model_registry
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: erp_frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:
+  model_registry:
