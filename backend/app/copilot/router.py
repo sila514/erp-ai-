@@ -1,5 +1,7 @@
-from anthropic import Anthropic
+import json
+
 from fastapi import APIRouter, Depends
+from google import genai
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -9,7 +11,18 @@ from app.copilot.tools import COPILOT_TOOLS, execute_tool
 
 router = APIRouter(prefix="/api/copilot", tags=["copilot"])
 
-client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+_client: genai.Client | None = None
+
+
+def _get_client() -> genai.Client:
+    """Client'ı ilk gerçek kullanımda oluşturur — GEMINI_API_KEY henüz
+    ayarlanmamışsa (örn. testlerde, key eklenmeden önce) modül import'unu
+    (dolayısıyla tüm uygulamayı) çökertmemek için."""
+    global _client
+    if _client is None:
+        _client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    return _client
+
 
 SYSTEM_PROMPT = (
     "Sen bir ERP sisteminin yönetici asistanısın. Sadece sana tanımlı fonksiyonlar "
@@ -30,39 +43,51 @@ class CopilotAnswer(BaseModel):
     answer: str
 
 
+def _extract_final_text(interaction) -> str:
+    if getattr(interaction, "output_text", None):
+        return interaction.output_text
+    texts = []
+    for step in interaction.steps:
+        content = getattr(step, "content", None) or []
+        for part in content:
+            if getattr(part, "text", None):
+                texts.append(part.text)
+    return "".join(texts)
+
+
 @router.post("/ask", response_model=CopilotAnswer)
 def ask_copilot(payload: CopilotQuery, db: Session = Depends(get_db)):
-    messages = [{"role": "user", "content": payload.question}]
-
-    response = client.messages.create(
+    client = _get_client()
+    interaction = client.interactions.create(
         model=settings.COPILOT_MODEL,
-        max_tokens=1024,
-        system=SYSTEM_PROMPT,
+        system_instruction=SYSTEM_PROMPT,
         tools=COPILOT_TOOLS,
-        messages=messages,
+        input=payload.question,
     )
 
-    # LLM bir tool çağırmak istediyse, çalıştır ve sonucu tekrar modele ver
-    while response.stop_reason == "tool_use":
-        tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
-        messages.append({"role": "assistant", "content": response.content})
+    # LLM bir fonksiyon çağırmak istediyse, çalıştır ve sonucu tekrar modele ver
+    while True:
+        function_calls = [s for s in interaction.steps if s.type == "function_call"]
+        if not function_calls:
+            break
 
-        tool_results = []
-        for block in tool_use_blocks:
-            result = execute_tool(db, block.name, block.input)
-            tool_results.append(
-                {"type": "tool_result", "tool_use_id": block.id, "content": str(result)}
+        function_results = []
+        for fc in function_calls:
+            result = execute_tool(db, fc.name, dict(fc.arguments))
+            function_results.append(
+                {
+                    "type": "function_result",
+                    "name": fc.name,
+                    "call_id": fc.id,
+                    "result": [{"type": "text", "text": json.dumps(result)}],
+                }
             )
 
-        messages.append({"role": "user", "content": tool_results})
-
-        response = client.messages.create(
+        interaction = client.interactions.create(
             model=settings.COPILOT_MODEL,
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
+            previous_interaction_id=interaction.id,
             tools=COPILOT_TOOLS,
-            messages=messages,
+            input=function_results,
         )
 
-    final_text = "".join(b.text for b in response.content if b.type == "text")
-    return CopilotAnswer(answer=final_text)
+    return CopilotAnswer(answer=_extract_final_text(interaction))

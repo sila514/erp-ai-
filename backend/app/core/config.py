@@ -28,9 +28,9 @@ class Settings(BaseSettings):
     # ml_service ayrı bir consumer group ile dinler.
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    # AI Copilot icin LLM ayarlari
-    ANTHROPIC_API_KEY: str = ""
-    COPILOT_MODEL: str = "claude-sonnet-4-6"
+    # AI Copilot icin LLM ayarlari (Google Gemini - ucretsiz kotali)
+    GEMINI_API_KEY: str = ""
+    COPILOT_MODEL: str = "gemini-3.6-flash"
 
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]

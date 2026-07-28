@@ -1,6 +1,6 @@
 """
 copilot/tools.py::execute_tool fonksiyonlarını doğrudan (LLM'i mock'lamadan)
-test eder. Gerçek Anthropic API çağrısı gerektiren tam /api/copilot/ask akışı
+test eder. Gerçek Gemini API çağrısı gerektiren tam /api/copilot/ask akışı
 kapsam dışıdır (bkz. plan dokümanı) - burada test edilen, LLM'in çağırabileceği
 gerçek veri erişim fonksiyonlarının doğruluğudur.
 """

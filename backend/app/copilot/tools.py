@@ -13,37 +13,42 @@ from app.models.finance import FinanceTransaction, TransactionType
 from app.models.product import Product
 from app.models.sale import Sale
 
-# Claude'a gönderilecek tool şemaları (Anthropic tool-use formatı)
+# LLM'e gönderilecek tool şemaları (Gemini Interactions API function-declaration formatı)
 COPILOT_TOOLS = [
     {
+        "type": "function",
         "name": "get_low_stock_products",
         "description": "Stok seviyesi yeniden sipariş eşiğinin altında veya çok yakın olan ürünleri listeler.",
-        "input_schema": {"type": "object", "properties": {}, "required": []},
+        "parameters": {"type": "object", "properties": {}, "required": []},
     },
     {
+        "type": "function",
         "name": "get_top_at_risk_customers",
         "description": "Churn (kayıp) riski en yüksek müşterileri, risk skoruna göre sıralı listeler.",
-        "input_schema": {
+        "parameters": {
             "type": "object",
             "properties": {"limit": {"type": "integer", "description": "Kaç müşteri döndürülsün"}},
             "required": [],
         },
     },
     {
+        "type": "function",
         "name": "get_finance_summary",
         "description": "Toplam gelir, gider ve net kâr özetini döndürür.",
-        "input_schema": {"type": "object", "properties": {}, "required": []},
+        "parameters": {"type": "object", "properties": {}, "required": []},
     },
     {
+        "type": "function",
         "name": "get_recent_flagged_sales",
         "description": "Anomali olarak işaretlenmiş son satışları listeler.",
-        "input_schema": {
+        "parameters": {
             "type": "object",
             "properties": {"limit": {"type": "integer"}},
             "required": [],
         },
     },
     {
+        "type": "function",
         "name": "get_correlation_insights",
         "description": (
             "Churn veya talep tahmini için hangi feature'ların hedefle istatistiksel olarak "
@@ -51,7 +56,7 @@ COPILOT_TOOLS = [
             "SADECE korelasyon/ilişkidir — nedensellik değildir, asla 'X, Y'ye sebep oluyor' "
             "gibi bir iddia kurma; 'X ile Y arasında ilişki gözlemleniyor' şeklinde ifade et."
         ),
-        "input_schema": {
+        "parameters": {
             "type": "object",
             "properties": {
                 "target": {

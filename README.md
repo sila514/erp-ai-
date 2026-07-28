@@ -19,7 +19,7 @@ frontend (React + TS)  →  backend (FastAPI)  →  PostgreSQL
 ```
 
 - **backend**: Kimlik doğrulama, ERP modülleri (stok/satış/müşteri/finans), AI Copilot
-  (Anthropic tool-use ile güvenli fonksiyon çağırma). Şema Alembic migration ile yönetilir.
+  (Gemini Interactions API ile güvenli fonksiyon çağırma). Şema Alembic migration ile yönetilir.
 - **ml_service**: Ayrı bir mikroservis. Talep tahmini, stok riski, müşteri segmentasyonu,
   churn tahmini ve anomali tespiti. Redis Streams üzerinden `sale.created` olaylarını
   dinleyen bir consumer içerir (event-driven; backend artık ML sonucunu senkron beklemez).
@@ -30,7 +30,7 @@ frontend (React + TS)  →  backend (FastAPI)  →  PostgreSQL
 
 ```bash
 cp infra/.env.example infra/.env
-# infra/.env içine ANTHROPIC_API_KEY değerini ekle (Copilot için gerekli)
+# infra/.env içine GEMINI_API_KEY değerini ekle (Copilot için gerekli)
 
 docker compose up --build
 ```

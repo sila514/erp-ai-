@@ -10,7 +10,7 @@ mock'lanır (bkz. fake_redis fixture).
 """
 import os
 
-os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+os.environ.setdefault("GEMINI_API_KEY", "test-key")
 os.environ.setdefault("ENV", "test")
 
 import fakeredis
