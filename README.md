@@ -101,5 +101,3 @@ Model eğitilmeden `/stock-risk` ve `/demand-forecast` endpoint'leri fallback
 1. ML modelleri için zamanlanmış yeniden eğitim job'ları ekle (örn. Celery beat veya
    basit bir cron + script) - talep tahmini modeli şu an manuel tetikleniyor.
 2. AI Copilot için tool setini genişlet (örn. "bu ürünün talep tahminini göster").
-3. Auth akışını frontend'e bağla (login sayfası + token saklama) - API tarafı hazır
-   (`/api/auth/register`, `/api/auth/login`, JWT), frontend henüz login ekranı içermiyor.

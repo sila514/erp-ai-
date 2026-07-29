@@ -1,5 +1,30 @@
 import { apiClient } from "./client";
 
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  full_name: string | null;
+  role: "admin" | "manager" | "sales" | "inventory" | "finance";
+  is_active: boolean;
+}
+
+/** Backend /api/auth/login OAuth2PasswordRequestForm bekler - form-urlencoded gönderilmeli. */
+export async function login(username: string, password: string): Promise<string> {
+  const body = new URLSearchParams({ username, password });
+  const { data } = await apiClient.post<{ access_token: string; token_type: string }>(
+    "/api/auth/login",
+    body,
+    { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+  );
+  return data.access_token;
+}
+
+export async function fetchCurrentUser(): Promise<AuthUser> {
+  const { data } = await apiClient.get<AuthUser>("/api/auth/me");
+  return data;
+}
+
 export interface DashboardOverview {
   total_products: number;
   low_stock_products: number;

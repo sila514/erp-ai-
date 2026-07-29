@@ -12,6 +12,7 @@ import {
 import AuroraBackground from "@/components/ui/AuroraBackground";
 import GlobalSearch from "@/components/ui/GlobalSearch";
 import NotificationsDropdown from "@/components/ui/NotificationsDropdown";
+import UserMenu from "@/components/ui/UserMenu";
 
 const navItems = [
   { to: "/", label: "Genel bakış", icon: LayoutDashboard },
@@ -93,11 +94,7 @@ export default function DashboardLayout() {
           <div className="flex-1" />
           <GlobalSearch />
           <NotificationsDropdown />
-          <div className="rounded-full bg-gradient-to-br from-sky-400 via-indigo-500 to-fuchsia-500 p-[1.5px] shadow-glow-sm">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-navy-950 text-[10px] font-bold text-white">
-              EA
-            </div>
-          </div>
+          <UserMenu />
         </header>
 
         <main className="flex-1 overflow-y-auto pb-3 pr-1">

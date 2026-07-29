@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import DashboardLayout from "@/layouts/DashboardLayout";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import LoginPage from "@/modules/auth/LoginPage";
 import Dashboard from "@/modules/dashboard/Dashboard";
 import InventoryPage from "@/modules/inventory/InventoryPage";
 import SalesPage from "@/modules/sales/SalesPage";
@@ -12,14 +14,17 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<DashboardLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="inventory" element={<InventoryPage />} />
-          <Route path="sales" element={<SalesPage />} />
-          <Route path="customers" element={<CustomersPage />} />
-          <Route path="finance" element={<FinancePage />} />
-          <Route path="analytics" element={<AnalyticsPage />} />
-          <Route path="copilot" element={<CopilotPage />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<DashboardLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="inventory" element={<InventoryPage />} />
+            <Route path="sales" element={<SalesPage />} />
+            <Route path="customers" element={<CustomersPage />} />
+            <Route path="finance" element={<FinancePage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="copilot" element={<CopilotPage />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
