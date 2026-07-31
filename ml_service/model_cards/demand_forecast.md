@@ -1,7 +1,7 @@
 # Model Card — Talep Tahmini (Demand Forecast)
 
-**Son güncelleme**: 2026-07-26T19:54:40.457071+00:00
-**Örnek ürün**: 1971ee24-0e28-4f94-ae5a-bf05e98e9d56
+**Son güncelleme**: 2026-07-31T10:01:13.692651+00:00
+**Örnek ürün**: f8b68864-f372-48f4-ad25-e01bf72e5183
 
 ## Veri
 - Kaynak: `stock_movements` tablosu, `movement_type='out'`, günlük toplanmış miktar.
@@ -15,16 +15,16 @@
 - Deney takibi: MLflow (`./mlruns`, `demand_forecast` experiment'i).
 
 ## Veri Drift Kontrolü
-PSI=0.0000 (önemli değişim yok), KS p-value=1.0000 (drifted=False)
+İlk eğitim — henüz referans dağılım yok.
 
 ## Sonuçlar (CV ortalaması)
 
 ```
 Model                      MAE      RMSE    MAPE %    Fold
-xgboost                   2.47      3.04      69.8       5
-naive                     3.41      4.29      92.1       5
-seasonal_naive            2.81      3.76      62.4       5
-moving_average_7          2.47      3.23      72.5       5
+xgboost                   3.09      4.22      63.4       5
+naive                     4.40      5.56      79.0       5
+seasonal_naive            3.87      5.22      67.1       5
+moving_average_7          3.42      4.38      72.9       5
 
 XGBoost baseline'ı geçti mi: True
 ```

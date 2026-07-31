@@ -8,6 +8,8 @@ class MLSettings(BaseSettings):
     DATABASE_URL: str = "postgresql://erp_user:erp_pass@localhost:5432/erp_db"
     MODEL_REGISTRY_PATH: str = "./model_registry"
     REDIS_URL: str = "redis://localhost:6379/0"
+    RETRAIN_SCHEDULE_ENABLED: bool = True
+    RETRAIN_SCHEDULE_TIME: str = "02:00"  # UTC, "HH:MM", günlük
 
 
 settings = MLSettings()

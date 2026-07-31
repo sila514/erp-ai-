@@ -1,6 +1,6 @@
 # Model Card — Anomali Tespiti (Satış İşlemleri)
 
-**Son güncelleme**: 2026-07-26T19:56:14.734973+00:00
+**Son güncelleme**: 2026-07-31T10:01:17.595981+00:00
 
 ## Veri
 - Geçmiş satış sayısı: 5000

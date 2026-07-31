@@ -10,6 +10,8 @@ from app.customer_segmentation.router import router as segmentation_router
 from app.churn.router import router as churn_router
 from app.anomaly_detection.router import router as anomaly_router
 from app.events.consumer import consume_sales_events
+from app.common.database import settings
+from app.scheduler.scheduler import build_scheduler
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,26 @@ async def stop_sales_event_consumer():
         await task
     except asyncio.CancelledError:
         pass
+
+
+@app.on_event("startup")
+async def start_retrain_scheduler():
+    if settings.RETRAIN_SCHEDULE_ENABLED:
+        app.state.retrain_scheduler = build_scheduler()
+        app.state.retrain_scheduler.start()
+        logger.info(
+            "Model yeniden eğitim zamanlayıcısı başlatıldı (saat=%s UTC)",
+            settings.RETRAIN_SCHEDULE_TIME,
+        )
+    else:
+        app.state.retrain_scheduler = None
+
+
+@app.on_event("shutdown")
+async def stop_retrain_scheduler():
+    scheduler = getattr(app.state, "retrain_scheduler", None)
+    if scheduler:
+        scheduler.shutdown(wait=False)
 
 
 @app.get("/health")

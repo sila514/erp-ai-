@@ -96,8 +96,19 @@ python -m app.demand_forecast.train <product_id>
 Model eğitilmeden `/stock-risk` ve `/demand-forecast` endpoint'leri fallback
 (basit ortalama) değerler döndürür — sistem çökmez, sadece daha az isabetli tahmin yapar.
 
+## Zamanlanmış model yeniden eğitimi
+
+`ml_service`, `RETRAIN_SCHEDULE_ENABLED=true` (varsayılan) olduğunda her gün
+`RETRAIN_SCHEDULE_TIME` (varsayılan `02:00` UTC) saatinde talep tahmini (yeterli geçmişi
+olan tüm ürünler için), churn ve anomali tespiti modellerini otomatik olarak yeniden eğitir
+(bkz. `ml_service/app/scheduler/`). Zamanlayıcı ayrı bir servis/container gerektirmez —
+`ml_service` FastAPI sürecinin içinde, mevcut Redis Streams consumer'ıyla aynı
+startup/shutdown deseniyle çalışır. `customer_segmentation` kapsam dışıdır çünkü diske model
+kaydetmez; segmentler her istekte canlı hesaplanır.
+
+CLI ile manuel eğitim (`python -m app.demand_forecast.train <product_id>`) hâlâ çalışır ve
+tek bir ürünü hemen yeniden eğitmek istendiğinde kullanılabilir.
+
 ## Sıradaki adımlar
 
-1. ML modelleri için zamanlanmış yeniden eğitim job'ları ekle (örn. Celery beat veya
-   basit bir cron + script) - talep tahmini modeli şu an manuel tetikleniyor.
-2. AI Copilot için tool setini genişlet (örn. "bu ürünün talep tahminini göster").
+1. AI Copilot için tool setini genişlet (örn. "bu ürünün talep tahminini göster").
