@@ -109,6 +109,10 @@ kaydetmez; segmentler her istekte canlı hesaplanır.
 CLI ile manuel eğitim (`python -m app.demand_forecast.train <product_id>`) hâlâ çalışır ve
 tek bir ürünü hemen yeniden eğitmek istendiğinde kullanılabilir.
 
-## Sıradaki adımlar
+## AI Copilot tool seti
 
-1. AI Copilot için tool setini genişlet (örn. "bu ürünün talep tahminini göster").
+Copilot (`backend/app/copilot/tools.py`, `COPILOT_TOOLS`), LLM'e şu fonksiyonları sunar:
+`get_low_stock_products`, `get_top_at_risk_customers`, `get_finance_summary`,
+`get_recent_flagged_sales`, `get_correlation_insights`, ve ml_service'in talep tahmini/churn/stok
+riski modellerine SKU veya müşteri adı üzerinden erişen `get_demand_forecast`,
+`get_customer_churn_risk`, `get_stock_risk`.

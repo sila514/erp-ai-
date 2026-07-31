@@ -72,7 +72,82 @@ COPILOT_TOOLS = [
             "required": ["target"],
         },
     },
+    {
+        "type": "function",
+        "name": "get_demand_forecast",
+        "description": (
+            "Bir ürün için önümüzdeki günlerin talep tahminini (p10/p50/p90 aralığıyla) döndürür. "
+            "Ürün için henüz eğitilmiş bir model yoksa bunu açıkça belirt, sayı uydurma."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "sku": {"type": "string", "description": "Ürünün SKU kodu"},
+                "horizon_days": {
+                    "type": "integer",
+                    "description": "Kaç gün ileriye tahmin yapılsın (varsayılan 30)",
+                },
+            },
+            "required": ["sku"],
+        },
+    },
+    {
+        "type": "function",
+        "name": "get_customer_churn_risk",
+        "description": (
+            "Belirli bir müşterinin churn (kayıp) olasılığını ve bu riske en çok katkı yapan "
+            "faktörleri döndürür. Genel risk listesi için get_top_at_risk_customers'ı kullan; "
+            "bu fonksiyon tek bir müşteri hakkında detaylı açıklama gerektiğinde kullanılır."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "customer_name": {"type": "string", "description": "Müşterinin adı"},
+            },
+            "required": ["customer_name"],
+        },
+    },
+    {
+        "type": "function",
+        "name": "get_stock_risk",
+        "description": (
+            "Bir ürün için stok tükenme riskini, önerilen güvenlik stoğunu ve yeniden sipariş "
+            "miktarını döndürür."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "sku": {"type": "string", "description": "Ürünün SKU kodu"},
+                "service_level": {
+                    "type": "number",
+                    "description": "Hedeflenen servis seviyesi, 0.5-0.999 arası (varsayılan 0.95)",
+                },
+            },
+            "required": ["sku"],
+        },
+    },
 ]
+
+
+def _get_product_by_sku(db: Session, sku: str) -> Product | None:
+    return db.query(Product).filter(Product.sku == sku).first()
+
+
+def _find_customers_by_name(db: Session, name: str) -> list[Customer]:
+    return db.query(Customer).filter(Customer.name.ilike(f"%{name}%")).all()
+
+
+def _call_ml_service(path: str, params: dict | None = None) -> dict:
+    try:
+        resp = httpx.get(f"{settings.ML_SERVICE_URL}{path}", params=params or {}, timeout=15.0)
+        resp.raise_for_status()
+        return {"data": resp.json()}
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 404:
+            return {"error": "İlgili kayıt için henüz eğitilmiş bir model veya yeterli veri yok."}
+        return {"error": f"ML servisi hatası: {exc}"}
+    except httpx.HTTPError as exc:
+        return {"error": f"ML servisine ulaşılamadı: {exc}"}
 
 
 def execute_tool(db: Session, tool_name: str, tool_input: dict) -> dict:
@@ -159,6 +234,72 @@ def execute_tool(db: Session, tool_name: str, tool_input: dict) -> dict:
                 for row in significant
             ],
             "note": "significant_relationships boşsa, çoklu test düzeltmesi sonrası anlamlı bir ilişki bulunamadı demektir.",
+        }
+
+    if tool_name == "get_demand_forecast":
+        sku = tool_input["sku"]
+        product = _get_product_by_sku(db, sku)
+        if product is None:
+            return {"error": f"'{sku}' SKU'lu ürün bulunamadı."}
+
+        horizon_days = tool_input.get("horizon_days", 30)
+        outcome = _call_ml_service(f"/demand-forecast/{product.id}", {"horizon_days": horizon_days})
+        if "error" in outcome:
+            return outcome
+        data = outcome["data"]
+        return {
+            "sku": sku,
+            "product_name": product.name,
+            "horizon_days": data["horizon_days"],
+            "predicted_daily_demand": data["predicted_daily_demand"],
+            "predicted_daily_demand_p10": data["predicted_daily_demand_p10"],
+            "predicted_daily_demand_p90": data["predicted_daily_demand_p90"],
+            "average_daily_demand": data["average_daily_demand"],
+        }
+
+    if tool_name == "get_customer_churn_risk":
+        customer_name = tool_input["customer_name"]
+        matches = _find_customers_by_name(db, customer_name)
+        if not matches:
+            return {"error": f"'{customer_name}' adında bir müşteri bulunamadı."}
+        if len(matches) > 1:
+            return {
+                "error": (
+                    f"Birden fazla müşteri eşleşti: {', '.join(c.name for c in matches)}. "
+                    "Hangisi olduğunu netleştir."
+                )
+            }
+        customer = matches[0]
+
+        outcome = _call_ml_service(f"/churn/{customer.id}")
+        if "error" in outcome:
+            return outcome
+        data = outcome["data"]
+        return {
+            "customer_name": customer.name,
+            "churn_probability": data["churn_probability"],
+            "risk_level": data["risk_level"],
+            "top_factors": data["top_factors"],
+        }
+
+    if tool_name == "get_stock_risk":
+        sku = tool_input["sku"]
+        product = _get_product_by_sku(db, sku)
+        if product is None:
+            return {"error": f"'{sku}' SKU'lu ürün bulunamadı."}
+
+        service_level = tool_input.get("service_level", 0.95)
+        outcome = _call_ml_service(f"/stock-risk/{product.id}", {"service_level": service_level})
+        if "error" in outcome:
+            return outcome
+        data = outcome["data"]
+        return {
+            "sku": sku,
+            "product_name": product.name,
+            "current_stock": data["current_stock"],
+            "risk_level": data["risk_level"],
+            "days_until_stockout": data["days_until_stockout"],
+            "recommended_reorder_quantity": data["recommended_reorder_quantity"],
         }
 
     return {"error": f"Bilinmeyen fonksiyon: {tool_name}"}
